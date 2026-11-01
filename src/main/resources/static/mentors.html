@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Mentors - Transparent Matching</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <nav class="navbar">
+            <a href="index.html" class="brand">
+                <span class="brand-icon">M</span>
+                <span>MentorMatch</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="profile.html">Profiles</a></li>
+                <li><a href="mentors.html" class="active">Find Mentors</a></li>
+                <li><a href="requests.html">Requests</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <h1>Matchmaking & Recommendations</h1>
+            <p>Select a Mentee to view mentors ranked by our transparent match score algorithm.</p>
+        </div>
+
+        <div id="alertBox" class="alert"></div>
+
+        <!-- Mentee Selector Card -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; align-items: end;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="menteeSelect">Select Active Mentee Profile</label>
+                    <select id="menteeSelect" class="form-control" onchange="onMenteeSelected()">
+                        <option value="">-- Choose a Mentee --</option>
+                    </select>
+                </div>
+                <button id="findBtn" class="btn btn-primary" onclick="loadMatches()" style="height: 42px;">
+                    Find Matching Mentors
+                </button>
+            </div>
+
+            <!-- Selected Mentee Summary Preview -->
+            <div id="menteeInfo" style="display: none; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px dashed var(--border);">
+                <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                    <div>
+                        <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--muted); font-weight: 700;">Mentee Wants Guidance In (Skills):</span>
+                        <div id="menteeSkillsChips" style="margin-top: 0.3rem;"></div>
+                    </div>
+                    <div>
+                        <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--muted); font-weight: 700;">Domains / Interests:</span>
+                        <div id="menteeInterestsChips" style="margin-top: 0.3rem;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="font-size: 1.25rem; font-weight: 800; color: var(--text);">
+                    Ranked Mentor Matches (<span id="matchCount">0</span>)
+                </h2>
+                <span style="font-size: 0.85rem; color: var(--muted);">
+                    Ranked by Match Score &bull; 70% Skills + 30% Interests
+                </span>
+            </div>
+
+            <!-- Mentor Match Grid -->
+            <div id="matchGrid" class="match-grid"></div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" style="display: none; text-align: center; padding: 3rem;">
+            <p style="color: var(--muted); font-size: 1rem;">Calculating match percentages...</p>
+        </div>
+    </main>
+
+    <!-- Request Modal Form Overlay -->
+    <div id="requestModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center;">
+        <div class="card" style="max-width: 500px; width: 90%; background: var(--card); border: 1px solid var(--border);">
+            <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--text);">Send Mentorship Request</h3>
+            <p style="font-size: 0.88rem; color: var(--muted); margin-bottom: 1.25rem;">
+                Sending request to: <strong id="modalMentorName" style="color: var(--text);">-</strong>
+            </p>
+            <input type="hidden" id="modalMentorId">
+            <div class="form-group">
+                <label for="requestMsg">Introduce yourself and your goals:</label>
+                <textarea id="requestMsg" class="form-control" rows="4" placeholder="Hello! I saw your mentor profile and would really appreciate your guidance in software development."></textarea>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="submitRequest()">Send Request</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Mentorship Matching Platform &bull; B.Tech IT Mini Project</p>
+    </footer>
+
+    <script>
+        let menteesList = [];
+
+        function showAlert(message, isError = false) {
+            const alertBox = document.getElementById('alertBox');
+            alertBox.innerText = message;
+            alertBox.className = 'alert ' + (isError ? 'alert-error' : '');
+            alertBox.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(() => { alertBox.style.display = 'none'; }, 4500);
+        }
+
+        async function loadMentees() {
+            try {
+                const res = await fetch('/api/users?role=MENTEE');
+                menteesList = await res.json();
+                const select = document.getElementById('menteeSelect');
+                select.innerHTML = '<option value="">-- Choose a Mentee --</option>' + 
+                    menteesList.map(m => `<option value="${m.id}">${m.name} (${m.email})</option>`).join('');
+
+                if (menteesList.length > 0) {
+                    select.value = menteesList[0].id;
+                    onMenteeSelected();
+                    loadMatches();
+                }
+            } catch (err) {
+                showAlert("Failed to load mentees: " + err.message, true);
+            }
+        }
+
+        function onMenteeSelected() {
+            const menteeId = document.getElementById('menteeSelect').value;
+            const infoBox = document.getElementById('menteeInfo');
+            if (!menteeId) {
+                infoBox.style.display = 'none';
+                return;
+            }
+
+            const mentee = menteesList.find(m => m.id == menteeId);
+            if (mentee) {
+                infoBox.style.display = 'block';
+                const skills = (mentee.skills || '').split(',').map(s => s.trim()).filter(s => s);
+                const interests = (mentee.interests || '').split(',').map(i => i.trim()).filter(i => i);
+
+                document.getElementById('menteeSkillsChips').innerHTML = skills.length 
+                    ? skills.map(s => `<span class="tag tag-shared">${s}</span>`).join('')
+                    : '<span style="color: var(--muted); font-size: 0.8rem;">None specified</span>';
+
+                document.getElementById('menteeInterestsChips').innerHTML = interests.length 
+                    ? interests.map(i => `<span class="tag tag-shared">${i}</span>`).join('')
+                    : '<span style="color: var(--muted); font-size: 0.8rem;">None specified</span>';
+            }
+        }
+
+        async function loadMatches() {
+            const menteeId = document.getElementById('menteeSelect').value;
+            if (!menteeId) {
+                showAlert("Please select a mentee first.", true);
+                return;
+            }
+
+            const resultsSection = document.getElementById('resultsSection');
+            const loadingState = document.getElementById('loadingState');
+            const grid = document.getElementById('matchGrid');
+
+            resultsSection.style.display = 'none';
+            loadingState.style.display = 'block';
+
+            try {
+                const res = await fetch(`/api/users/${menteeId}/matches`);
+                const matches = await res.json();
+
+                loadingState.style.display = 'none';
+                resultsSection.style.display = 'block';
+                document.getElementById('matchCount').innerText = matches.length;
+
+                if (matches.length === 0) {
+                    grid.innerHTML = '<p style="color: var(--muted);">No mentors found in the database.</p>';
+                    return;
+                }
+
+                grid.innerHTML = matches.map((match, index) => {
+                    const m = match.mentor;
+                    const score = match.matchPercentage;
+
+                    const commonSkillsBadges = match.commonSkills.length > 0
+                        ? match.commonSkills.map(s => `<span class="tag tag-shared">&check; ${s}</span>`).join('')
+                        : '<span style="color: var(--muted); font-size: 0.78rem;">No common skills</span>';
+
+                    const commonInterestsBadges = match.commonInterests.length > 0
+                        ? match.commonInterests.map(i => `<span class="tag tag-shared">&check; ${i}</span>`).join('')
+                        : '<span style="color: var(--muted); font-size: 0.78rem;">No common interests</span>';
+
+                    return `
+                        <div class="mentor-card">
+                            <div>
+                                <div class="mentor-card-top">
+                                    <div>
+                                        <span class="badge badge-role" style="margin-bottom: 0.35rem;">#${index + 1} Match</span>
+                                        <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text);">${m.name}</h3>
+                                        <div style="font-size: 0.82rem; color: var(--muted);">${m.email}</div>
+                                        <div style="font-size: 0.82rem; color: var(--muted); margin-top: 0.15rem;">
+                                            <strong style="color: var(--text);">${m.yearsOfExperience || 0}</strong> yrs experience
+                                        </div>
+                                    </div>
+                                    <div class="score-container">
+                                        <div class="score-text">${score}%</div>
+                                        <div class="score-track">
+                                            <div class="score-fill" style="width: ${score}%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <p style="font-size: 0.84rem; color: var(--muted); margin: 0.6rem 0;">
+                                    ${m.bio || 'Experienced mentor ready to assist.'}
+                                </p>
+
+                                <!-- Why This Match Box (USP) -->
+                                <div class="why-match-box">
+                                    <strong>&bull; Why this match?</strong>
+                                    <div style="margin-bottom: 0.35rem;">
+                                        <span style="font-size: 0.75rem; color: var(--muted); font-weight: 600;">Shared Skills:</span><br>
+                                        ${commonSkillsBadges}
+                                    </div>
+                                    <div style="margin-bottom: 0.4rem;">
+                                        <span style="font-size: 0.75rem; color: var(--muted); font-weight: 600;">Shared Interests:</span><br>
+                                        ${commonInterestsBadges}
+                                    </div>
+                                    <div style="font-size: 0.75rem; color: var(--muted); font-style: italic; border-top: 1px dashed var(--border); padding-top: 0.35rem;">
+                                        ${match.explanation}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-primary btn-sm" style="width: 100%; margin-top: 0.8rem;" 
+                                onclick="openRequestModal(${m.id}, '${m.name.replace(/'/g, "\\'")}')">
+                                Request Mentorship
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                loadingState.style.display = 'none';
+                showAlert("Error calculating matches: " + err.message, true);
+            }
+        }
+
+        function openRequestModal(mentorId, mentorName) {
+            document.getElementById('modalMentorId').value = mentorId;
+            document.getElementById('modalMentorName').innerText = mentorName;
+            document.getElementById('requestMsg').value = "Hello! I saw your mentor profile and would really appreciate your guidance in software development.";
+            document.getElementById('requestModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('requestModal').style.display = 'none';
+        }
+
+        async function submitRequest() {
+            const menteeId = document.getElementById('menteeSelect').value;
+            const mentorId = document.getElementById('modalMentorId').value;
+            const message = document.getElementById('requestMsg').value.trim();
+
+            if (!menteeId) {
+                alert("Please select a mentee first.");
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/requests', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        menteeId: parseInt(menteeId),
+                        mentorId: parseInt(mentorId),
+                        message: message
+                    })
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.error || "Failed to send request.");
+                }
+
+                closeModal();
+                showAlert("Mentorship request successfully sent! Check the Requests tab to view status.");
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadMentees);
+    </script>
+</body>
+</html>

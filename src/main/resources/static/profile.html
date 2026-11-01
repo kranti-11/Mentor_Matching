@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profiles - Mentorship Platform</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <nav class="navbar">
+            <a href="index.html" class="brand">
+                <span class="brand-icon">M</span>
+                <span>MentorMatch</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="profile.html" class="active">Profiles</a></li>
+                <li><a href="mentors.html">Find Mentors</a></li>
+                <li><a href="requests.html">Requests</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <h1>User Profiles</h1>
+            <p>Register a new Mentor or Mentee, and view all registered users in the platform.</p>
+        </div>
+
+        <div id="alertBox" class="alert"></div>
+
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; align-items: start;">
+            <!-- Create User Form Card -->
+            <div class="card">
+                <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.25rem; color: var(--text);">Create New Profile</h2>
+                <form id="profileForm">
+                    <div class="form-group">
+                        <label for="name">Full Name *</label>
+                        <input type="text" id="name" class="form-control" placeholder="e.g. John Doe" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address *</label>
+                        <input type="email" id="email" class="form-control" placeholder="e.g. john@example.com" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="role">Role *</label>
+                        <select id="role" class="form-control" required onchange="handleRoleChange()">
+                            <option value="MENTEE">MENTEE (Student / Guidance Seeker)</option>
+                            <option value="MENTOR">MENTOR (Industry Expert / Guide)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="skills">Skills (Comma-separated) *</label>
+                        <input type="text" id="skills" class="form-control" placeholder="e.g. Java, Spring Boot, MySQL" required>
+                        <div class="form-help">Separate individual skills with commas.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="interests">Interests (Comma-separated) *</label>
+                        <input type="text" id="interests" class="form-control" placeholder="e.g. Backend, Cloud, AI" required>
+                        <div class="form-help">Separate domains/topics with commas.</div>
+                    </div>
+
+                    <div class="form-group" id="experienceGroup">
+                        <label for="yearsOfExperience">Years of Experience</label>
+                        <input type="number" id="yearsOfExperience" class="form-control" value="0" min="0" max="50">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bio">Short Bio</label>
+                        <textarea id="bio" class="form-control" rows="3" placeholder="Brief background or mentorship goals..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Create Profile</button>
+                </form>
+            </div>
+
+            <!-- Existing Users Directory -->
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--text);">Registered Users (<span id="userCount">0</span>)</h2>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-outline btn-sm" onclick="filterUsers('ALL')">All</button>
+                        <button class="btn btn-outline btn-sm" onclick="filterUsers('MENTOR')">Mentors</button>
+                        <button class="btn btn-outline btn-sm" onclick="filterUsers('MENTEE')">Mentees</button>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name & Role</th>
+                                <th>Skills</th>
+                                <th>Interests</th>
+                                <th>Exp</th>
+                                <th>Bio</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userTableBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--muted); padding: 2rem;">Loading users...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>Mentorship Matching Platform &bull; B.Tech IT Mini Project</p>
+    </footer>
+
+    <script>
+        let allUsers = [];
+        let currentFilter = 'ALL';
+
+        function showAlert(message, isError = false) {
+            const alertBox = document.getElementById('alertBox');
+            alertBox.innerText = message;
+            alertBox.className = 'alert ' + (isError ? 'alert-error' : '');
+            alertBox.style.display = 'block';
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+            }, 4500);
+        }
+
+        function handleRoleChange() {
+            const role = document.getElementById('role').value;
+            const expInput = document.getElementById('yearsOfExperience');
+            if (role === 'MENTEE') {
+                expInput.value = 0;
+            } else if (parseInt(expInput.value) === 0) {
+                expInput.value = 3;
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const res = await fetch('/api/users');
+                allUsers = await res.json();
+                renderTable();
+            } catch (err) {
+                showAlert("Failed to load users: " + err.message, true);
+            }
+        }
+
+        function filterUsers(filter) {
+            currentFilter = filter;
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('userTableBody');
+            let filtered = allUsers;
+            if (currentFilter !== 'ALL') {
+                filtered = allUsers.filter(u => u.role === currentFilter);
+            }
+
+            document.getElementById('userCount').innerText = filtered.length;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--muted); padding: 2rem;">No users found for this filter.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(u => {
+                const roleBadge = `<span class="badge badge-role">${u.role}</span>`;
+                
+                const skillsTags = (u.skills || '').split(',')
+                    .map(s => s.trim())
+                    .filter(s => s)
+                    .map(s => `<span class="tag">${s}</span>`).join('');
+
+                const interestsTags = (u.interests || '').split(',')
+                    .map(i => i.trim())
+                    .filter(i => i)
+                    .map(i => `<span class="tag">${i}</span>`).join('');
+
+                return `
+                    <tr>
+                        <td>
+                            <strong style="color: var(--text);">${u.name}</strong><br>
+                            <small style="color: var(--muted);">${u.email}</small><br>
+                            ${roleBadge}
+                        </td>
+                        <td>${skillsTags || '<span style="color: var(--muted);">-</span>'}</td>
+                        <td>${interestsTags || '<span style="color: var(--muted);">-</span>'}</td>
+                        <td><strong style="color: var(--text);">${u.yearsOfExperience || 0}</strong> yrs</td>
+                        <td style="max-width: 250px; font-size: 0.82rem; color: var(--muted);">${u.bio || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById('name').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                role: document.getElementById('role').value,
+                skills: document.getElementById('skills').value.trim(),
+                interests: document.getElementById('interests').value.trim(),
+                yearsOfExperience: parseInt(document.getElementById('yearsOfExperience').value) || 0,
+                bio: document.getElementById('bio').value.trim()
+            };
+
+            try {
+                const res = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.error || Object.values(errData).join(', '));
+                }
+
+                showAlert(`Profile created successfully for ${payload.name}!`);
+                document.getElementById('profileForm').reset();
+                document.getElementById('yearsOfExperience').value = 0;
+                await loadUsers();
+            } catch (err) {
+                showAlert(err.message, true);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', loadUsers);
+    </script>
+</body>
+</html>

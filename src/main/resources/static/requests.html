@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mentorship Requests - Status & Workflow</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <nav class="navbar">
+            <a href="index.html" class="brand">
+                <span class="brand-icon">M</span>
+                <span>MentorMatch</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="profile.html">Profiles</a></li>
+                <li><a href="mentors.html">Find Mentors</a></li>
+                <li><a href="requests.html" class="active">Requests</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <h1>Mentorship Requests</h1>
+            <p>Manage and track connection requests between Mentees and Mentors.</p>
+        </div>
+
+        <div id="alertBox" class="alert"></div>
+
+        <!-- Role Toggle Tabs -->
+        <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem;">
+            <button id="tabMentorBtn" class="btn btn-primary" onclick="switchTab('MENTOR')">
+                Mentor Inbox (Review & Accept/Reject)
+            </button>
+            <button id="tabMenteeBtn" class="btn btn-outline" onclick="switchTab('MENTEE')">
+                Mentee Outbox (Track Sent Requests)
+            </button>
+        </div>
+
+        <!-- ================= MENTOR VIEW ================= -->
+        <div id="mentorSection">
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="mentorSelect">Viewing Requests Received by Mentor:</label>
+                    <select id="mentorSelect" class="form-control" onchange="loadMentorRequests()">
+                        <option value="">-- Choose Mentor to View Inbox --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mentee</th>
+                            <th>Skills & Interests</th>
+                            <th>Introduction Message</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mentorRequestsTable">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--muted); padding: 2rem;">
+                                Select a mentor above to view incoming requests.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= MENTEE VIEW ================= -->
+        <div id="menteeSection" style="display: none;">
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="menteeSelect">Viewing Requests Sent by Mentee:</label>
+                    <select id="menteeSelect" class="form-control" onchange="loadMenteeRequests()">
+                        <option value="">-- Choose Mentee to Track Outbox --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Requested Mentor</th>
+                            <th>Mentor Domain</th>
+                            <th>My Message</th>
+                            <th>Current Status</th>
+                            <th>Date Sent</th>
+                        </tr>
+                    </thead>
+                    <tbody id="menteeRequestsTable">
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: var(--muted); padding: 2rem;">
+                                Select a mentee above to view sent requests.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>Mentorship Matching Platform &bull; B.Tech IT Mini Project</p>
+    </footer>
+
+    <script>
+        let currentTab = 'MENTOR';
+
+        function showAlert(message, isError = false) {
+            const alertBox = document.getElementById('alertBox');
+            alertBox.innerText = message;
+            alertBox.className = 'alert ' + (isError ? 'alert-error' : '');
+            alertBox.style.display = 'block';
+            setTimeout(() => { alertBox.style.display = 'none'; }, 4000);
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            const mentorBtn = document.getElementById('tabMentorBtn');
+            const menteeBtn = document.getElementById('tabMenteeBtn');
+            const mentorSec = document.getElementById('mentorSection');
+            const menteeSec = document.getElementById('menteeSection');
+
+            if (tab === 'MENTOR') {
+                mentorBtn.className = 'btn btn-primary';
+                menteeBtn.className = 'btn btn-outline';
+                mentorSec.style.display = 'block';
+                menteeSec.style.display = 'none';
+                loadMentorRequests();
+            } else {
+                mentorBtn.className = 'btn btn-outline';
+                menteeBtn.className = 'btn btn-primary';
+                mentorSec.style.display = 'none';
+                menteeSec.style.display = 'block';
+                loadMenteeRequests();
+            }
+        }
+
+        async function initDropdowns() {
+            try {
+                const res = await fetch('/api/users');
+                const users = await res.json();
+
+                const mentors = users.filter(u => u.role === 'MENTOR');
+                const mentees = users.filter(u => u.role === 'MENTEE');
+
+                const mentorSelect = document.getElementById('mentorSelect');
+                mentorSelect.innerHTML = mentors.map(m => `<option value="${m.id}">${m.name} (${m.email})</option>`).join('');
+
+                const menteeSelect = document.getElementById('menteeSelect');
+                menteeSelect.innerHTML = mentees.map(m => `<option value="${m.id}">${m.name} (${m.email})</option>`).join('');
+
+                if (mentors.length > 0) {
+                    mentorSelect.value = mentors[0].id;
+                    loadMentorRequests();
+                }
+            } catch (err) {
+                showAlert("Failed to load user lists: " + err.message, true);
+            }
+        }
+
+        // Grayscale status badges with different border styles
+        function getStatusBadge(status) {
+            if (status === 'ACCEPTED') return '<span class="badge badge-accepted">&check; ACCEPTED</span>';
+            if (status === 'REJECTED') return '<span class="badge badge-rejected">&times; REJECTED</span>';
+            return '<span class="badge badge-pending">&#9203; PENDING</span>';
+        }
+
+        async function loadMentorRequests() {
+            const mentorId = document.getElementById('mentorSelect').value;
+            if (!mentorId) return;
+
+            const tbody = document.getElementById('mentorRequestsTable');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--muted); padding: 2rem;">Loading requests...</td></tr>';
+
+            try {
+                const res = await fetch(`/api/requests/mentor/${mentorId}`);
+                const requests = await res.json();
+
+                if (requests.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--muted); padding: 2rem;">No requests received yet for this mentor.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = requests.map(r => {
+                    const dateStr = r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '-';
+                    const actionsHtml = r.status === 'PENDING'
+                        ? `<div style="display: flex; gap: 0.4rem;">
+                            <button class="btn btn-primary btn-sm" onclick="respondRequest(${r.id}, 'accept')">Accept</button>
+                            <button class="btn btn-outline btn-sm" onclick="respondRequest(${r.id}, 'reject')">Reject</button>
+                           </div>`
+                        : `<span style="font-size: 0.8rem; color: var(--muted);">Completed</span>`;
+
+                    return `
+                        <tr>
+                            <td>
+                                <strong style="color: var(--text);">${r.mentee.name}</strong><br>
+                                <small style="color: var(--muted);">${r.mentee.email}</small>
+                            </td>
+                            <td>
+                                <small style="color: var(--muted);">Skills: ${r.mentee.skills || '-'}</small><br>
+                                <small style="color: var(--muted);">Interests: ${r.mentee.interests || '-'}</small>
+                            </td>
+                            <td style="max-width: 250px; font-size: 0.85rem; color: var(--text);">${r.message || '-'}</td>
+                            <td>${getStatusBadge(r.status)}</td>
+                            <td>${dateStr}</td>
+                            <td>${actionsHtml}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                showAlert("Error loading mentor requests: " + err.message, true);
+            }
+        }
+
+        async function loadMenteeRequests() {
+            const menteeId = document.getElementById('menteeSelect').value;
+            if (!menteeId) return;
+
+            const tbody = document.getElementById('menteeRequestsTable');
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--muted); padding: 2rem;">Loading sent requests...</td></tr>';
+
+            try {
+                const res = await fetch(`/api/requests/mentee/${menteeId}`);
+                const requests = await res.json();
+
+                if (requests.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--muted); padding: 2rem;">No requests sent yet by this mentee.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = requests.map(r => {
+                    const dateStr = r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '-';
+                    return `
+                        <tr>
+                            <td>
+                                <strong style="color: var(--text);">${r.mentor.name}</strong><br>
+                                <small style="color: var(--muted);">${r.mentor.email}</small>
+                            </td>
+                            <td>
+                                <small style="color: var(--muted);">${r.mentor.skills || '-'}</small>
+                            </td>
+                            <td style="max-width: 250px; font-size: 0.85rem; color: var(--text);">${r.message || '-'}</td>
+                            <td>${getStatusBadge(r.status)}</td>
+                            <td>${dateStr}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                showAlert("Error loading mentee requests: " + err.message, true);
+            }
+        }
+
+        async function respondRequest(requestId, action) {
+            try {
+                const res = await fetch(`/api/requests/${requestId}/${action}`, {
+                    method: 'PUT'
+                });
+
+                if (!res.ok) {
+                    throw new Error(`Failed to ${action} request.`);
+                }
+
+                showAlert(`Request successfully ${action === 'accept' ? 'accepted' : 'rejected'}!`);
+                await loadMentorRequests();
+            } catch (err) {
+                showAlert(err.message, true);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initDropdowns);
+    </script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mentorship Matching Platform</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <nav class="navbar">
+            <a href="index.html" class="brand">
+                <span class="brand-icon">M</span>
+                <span>MentorMatch</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html" class="active">Home</a></li>
+                <li><a href="profile.html">Profiles</a></li>
+                <li><a href="mentors.html">Find Mentors</a></li>
+                <li><a href="requests.html">Requests</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <!-- Hero Section -->
+        <div class="hero-box">
+            <div style="max-width: 720px;">
+                <span class="badge" style="background: var(--surface); color: var(--muted); border: 1px solid var(--border); margin-bottom: 1rem;">
+                    B.Tech IT Mini Project
+                </span>
+                <h1 style="font-size: 2.2rem; font-weight: 800; line-height: 1.25; margin-bottom: 0.85rem; color: var(--text);">
+                    Transparent Mentorship Matching Platform
+                </h1>
+                <p style="font-size: 1rem; color: var(--muted); margin-bottom: 1.75rem;">
+                    Connecting students (Mentees) with industry guides (Mentors) using a transparent skill and interest matching algorithm. See exact percentages and reasons behind every recommendation.
+                </p>
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <a href="mentors.html" class="btn btn-primary">Find Matching Mentors</a>
+                    <a href="profile.html" class="btn btn-outline">Create Profile</a>
+                    <a href="requests.html" class="btn btn-outline">Manage Requests</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Platform Stats -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="card" style="text-align: center;">
+                <div style="color: var(--muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Active Mentors</div>
+                <div id="statMentors" style="font-size: 2.25rem; font-weight: 800; color: var(--text); margin: 0.3rem 0;">-</div>
+                <div style="font-size: 0.82rem; color: var(--muted);">Verified Guides</div>
+            </div>
+            <div class="card" style="text-align: center;">
+                <div style="color: var(--muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Active Mentees</div>
+                <div id="statMentees" style="font-size: 2.25rem; font-weight: 800; color: var(--text); margin: 0.3rem 0;">-</div>
+                <div style="font-size: 0.82rem; color: var(--muted);">Registered Students</div>
+            </div>
+            <div class="card" style="text-align: center;">
+                <div style="color: var(--muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Matching Engine</div>
+                <div style="font-size: 2.25rem; font-weight: 800; color: var(--text); margin: 0.3rem 0;">100%</div>
+                <div style="font-size: 0.82rem; color: var(--muted);">Transparent Formula</div>
+            </div>
+        </div>
+
+        <!-- Matching Formula Explanation Box (USP) -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: var(--text); margin-bottom: 0.75rem;">
+                Match Score Formula (Transparent Matching USP)
+            </h2>
+            <p style="color: var(--muted); margin-bottom: 1rem; font-size: 0.92rem;">
+                Our platform breaks down the match score mathematically based on skills (70% weight) and interests (30% weight):
+            </p>
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1.15rem; font-family: monospace; font-size: 0.95rem; color: var(--text); margin-bottom: 1rem;">
+                Match Score = [ (Common Skills / Mentee's Skills) &times; 70 ] + [ (Common Interests / Mentee's Interests) &times; 30 ]
+            </div>
+            <ul style="color: var(--muted); font-size: 0.88rem; padding-left: 1.5rem; line-height: 1.7;">
+                <li><strong>Skills Weight (70%):</strong> Evaluates technical competencies (e.g., Java, Spring Boot, MySQL).</li>
+                <li><strong>Interests Weight (30%):</strong> Aligns long-term career domains (e.g., Backend, Cloud, AI).</li>
+                <li><strong>Tie-Breaker:</strong> Mentors with equal match score are ranked by years of experience.</li>
+            </ul>
+        </div>
+
+        <!-- Quick Access Feature Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+            <div class="card">
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text);">1. User Profiles</h3>
+                <p style="color: var(--muted); font-size: 0.88rem; margin-bottom: 1rem;">
+                    Register as a Mentor or Mentee with technical skills, interests, experience, and bio.
+                </p>
+                <a href="profile.html" class="btn btn-outline btn-sm">Manage Profiles &rarr;</a>
+            </div>
+            <div class="card">
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text);">2. Match Recommendation</h3>
+                <p style="color: var(--muted); font-size: 0.88rem; margin-bottom: 1rem;">
+                    Select a mentee and instantly see mentors ranked with transparent "Why this match?" breakdowns.
+                </p>
+                <a href="mentors.html" class="btn btn-primary btn-sm">Find Mentors &rarr;</a>
+            </div>
+            <div class="card">
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text);">3. Request Workflow</h3>
+                <p style="color: var(--muted); font-size: 0.88rem; margin-bottom: 1rem;">
+                    Send connection requests and allow mentors to Accept or Reject with instant status updates.
+                </p>
+                <a href="requests.html" class="btn btn-outline btn-sm">View Requests &rarr;</a>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>Mentorship Matching Platform &bull; B.Tech IT Mini Project &bull; Spring Boot + Vanilla JS</p>
+    </footer>
+
+    <script>
+        // Load live statistics from backend API
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/users');
+                const users = await res.json();
+                const mentors = users.filter(u => u.role === 'MENTOR');
+                const mentees = users.filter(u => u.role === 'MENTEE');
+                document.getElementById('statMentors').innerText = mentors.length;
+                document.getElementById('statMentees').innerText = mentees.length;
+            } catch (err) {
+                console.error("Error loading stats:", err);
+            }
+        }
+        document.addEventListener('DOMContentLoaded', loadStats);
+    </script>
+</body>
+</html>
